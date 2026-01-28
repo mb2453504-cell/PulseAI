@@ -1,102 +1,64 @@
-const lang = {
+const texts = {
   ar: {
     title: "اكتب سؤالك وسيجيبك الذكاء الاصطناعي",
     placeholder: "اكتب هنا...",
-    send: "إرسال",
-    analyzing: "جارٍ التحليل...",
-    contact: "تواصل معنا",
-    login: "تسجيل دخول",
-    signup: "إنشاء حساب",
-    promptSuffix: {
-      symptoms: " (تحليل صحة عامة)",
-      nutrition: " (تحليل تغذية)",
-      fitness: " (تحليل لياقة بدنية)"
-    }
+    sending: "جارٍ التحليل..."
   },
   en: {
     title: "Ask your question and AI will answer",
     placeholder: "Type here...",
-    send: "Send",
-    analyzing: "Analyzing...",
-    contact: "Contact",
-    login: "Login",
-    signup: "Sign Up",
-    promptSuffix: {
-      symptoms: " (General Health Analysis)",
-      nutrition: " (Nutrition Analysis)",
-      fitness: " (Fitness Analysis)"
-    }
+    sending: "Analyzing..."
   },
   zh: {
-    title: "输入你的问题，AI 会回答",
+    title: "输入你的问题，AI 将回答",
     placeholder: "在此输入...",
-    send: "发送",
-    analyzing: "正在分析...",
-    contact: "联系",
-    login: "登录",
-    signup: "注册",
-    promptSuffix: {
-      symptoms: "（综合健康分析）",
-      nutrition: "（营养分析）",
-      fitness: "（健身分析）"
-    }
+    sending: "正在分析..."
   }
 };
 
-function setLanguage(l) {
-  document.getElementById("mainTitle").innerText = lang[l].title;
-  document.getElementById("inputText").placeholder = lang[l].placeholder;
-  document.getElementById("analyzeBtn").innerText = lang[l].send;
-  document.getElementById("contactBtn").innerText = lang[l].contact;
-  document.getElementById("loginBtn").innerText = lang[l].login;
-  document.getElementById("signupBtn").innerText = lang[l].signup;
+const langSelect = document.getElementById("lang");
+const typeSelect = document.getElementById("type");
+const title = document.getElementById("title");
+const textarea = document.getElementById("question");
+const result = document.getElementById("result");
+const sendBtn = document.getElementById("send");
+
+function updateLang() {
+  const l = langSelect.value;
+  title.innerText = texts[l].title;
+  textarea.placeholder = texts[l].placeholder;
 }
 
-document.getElementById("langSelect").onchange = (e) => {
-  setLanguage(e.target.value);
-};
+langSelect.onchange = updateLang;
+updateLang();
 
-setLanguage("ar");
+sendBtn.onclick = async () => {
+  const question = textarea.value.trim();
+  if (!question) return alert("اكتب سؤالك");
 
-async function askAI(prompt) {
-  const res = await fetch("https://kiukgdrkctbtknimkpds.supabase.co/functions/v1/openai-analyze", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ prompt })
-  });
+  const l = langSelect.value;
+  const type = typeSelect.value;
 
-  const data = await res.json();
-  return data.text || data.result || data.choices?.[0]?.message?.content || "No response";
-}
+  result.innerText = texts[l].sending;
 
-document.getElementById("analyzeBtn").onclick = async () => {
-  const prompt = document.getElementById("inputText").value;
-  const langVal = document.getElementById("langSelect").value;
-  const analysisVal = document.getElementById("analysisSelect").value;
+  try {
+    const res = await fetch(
+      "https://kiukgdrkctbtknimkpds.supabase.co/functions/v1/openai-analyze",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `${question}\nنوع التحليل: ${type}`
+        })
+      }
+    );
 
-  if (!prompt.trim()) {
-    alert("اكتب شيء أولاً");
-    return;
+    const data = await res.json();
+    result.innerText =
+      data.text ||
+      data.result ||
+      "لم يتم الحصول على رد من الذكاء الاصطناعي";
+  } catch (e) {
+    result.innerText = "حصل خطأ في الاتصال بالذكاء الاصطناعي";
   }
-
-  document.getElementById("aiResult").innerText = lang[langVal].analyzing;
-
-  const fullPrompt = prompt + lang[langVal].promptSuffix[analysisVal];
-  const answer = await askAI(fullPrompt);
-
-  document.getElementById("aiResult").innerText = answer;
-};
-
-document.getElementById("contactBtn").onclick = () => {
-  window.open("https://wa.me/201223547704", "_blank");
-};
-
-document.getElementById("loginBtn").onclick = () => {
-  window.location.href = "login.html";
-};
-
-document.getElementById("signupBtn").onclick = () => {
-  window.location.href = "signup.html";
 };
